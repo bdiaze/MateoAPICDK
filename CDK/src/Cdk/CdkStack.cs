@@ -73,8 +73,6 @@ namespace Cdk
                     MetricsEnabled = true,
                 },
                 RestApiName = $"{appName}APILambdaRestApi",
-                CloudWatchRole = false,
-                CloudWatchRoleRemovalPolicy = RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE,
             });
 
             // Creación de la CfnApiMapping para el API Gateway...
