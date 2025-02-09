@@ -46,7 +46,7 @@ jobs:
               run: dotnet publish -o ./publish
               
             - name: Compress Publish Directory
-              run: zip -r ./publish/publish.zip ./publish/*
+              run: zip -r -j ./publish/publish.zip ./publish/*
       
             - name: Configure AWS Credentials
               uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4
