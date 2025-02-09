@@ -1,0 +1,64 @@
+name: CDK Deploy on AWS
+
+on:
+    push:
+        branches:
+            - main
+      
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            id-token: write
+        env:
+            APP_NAME: ${{ vars.APP_NAME }}
+            ACCOUNT_AWS: ${{ vars.ACCOUNT_AWS }}
+            REGION_AWS: ${{ vars.REGION_AWS }}
+            COGNITO_APP_CLIENT_ID: ${{ vars.COGNITO_APP_CLIENT_ID }}
+            COGNITO_USER_POOL_ID: ${{ vars.COGNITO_USER_POOL_ID }}
+            COGNITO_REGION: ${{ vars.COGNITO_REGION }}
+            ALLOWED_DOMAINS: ${{ vars.ALLOWED_DOMAINS }}
+            PUBLISH_ZIP: ${{ vars.PUBLISH_ZIP }}
+            HANDLER: ${{ vars.HANDLER }}
+            TIMEOUT: ${{ vars.TIMEOUT }}
+            MEMORY_SIZE: ${{ vars.MEMORY_SIZE }}
+            DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
+            API_MAPPING_KEY: ${{ vars.API_MAPPING_KEY }}
+        steps:
+            - name: Checkout Repositorio
+              uses: actions/checkout@v4
+      
+            - name: Instalar .NET
+              uses: actions/setup-dotnet@v4
+              with:
+                  dotnet-version: ${{ vars.VERSION_DOTNET }}
+      
+            - name: Instalar Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ vars.VERSION_NODEJS }}
+                                                      
+            - name: Instalar AWS CDK
+              run: npm install -g aws-cdk
+              
+            - name: Publish .NET API
+              run: dotnet publish -o ./publish
+              
+            - name: Compress Publish Directory
+              run: zip -r ./publish/publish.zip ./publish/*
+      
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4
+              with:
+                  aws-region: ${{ vars.REGION_AWS }}
+                  role-to-assume: ${{ vars.ARN_GITHUB_ROLE }}
+                  
+            - name: CDK Synth
+              working-directory: ${{ vars.DIRECTORIO_CDK }}
+              run: cdk synth
+              
+            - name: CDK Deploy
+              working-directory: ${{ vars.DIRECTORIO_CDK }}
+              run: cdk deploy --require-approval never
+          
