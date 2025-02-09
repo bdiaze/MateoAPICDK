@@ -1,6 +1,7 @@
 using Amazon.CDK;
 using Amazon.CDK.AWS.APIGateway;
 using Amazon.CDK.AWS.Apigatewayv2;
+using Amazon.CDK.AWS.Cognito;
 using Amazon.CDK.AWS.IAM;
 using Amazon.CDK.AWS.Lambda;
 using Amazon.CDK.AWS.Logs;
@@ -61,6 +62,14 @@ namespace Cdk
                 RemovalPolicy = RemovalPolicy.DESTROY
             });
 
+            IUserPool userPool = UserPool.FromUserPoolId(this, $"{appName}APIUserPool", cognitoUserPoolId);
+
+            // Se crea authorizer para el apigateway...
+            CognitoUserPoolsAuthorizer cognitoUserPoolsAuthorizer = new CognitoUserPoolsAuthorizer(this, $"{appName}APIAuthorizer", new CognitoUserPoolsAuthorizerProps {
+                CognitoUserPools = [userPool],
+                AuthorizerName = $"{appName}APIAuthorizer",
+            });
+
             // Creación de la LambdaRestApi...
             LambdaRestApi lambdaRestApi = new LambdaRestApi(this, $"{appName}APILambdaRestApi", new LambdaRestApiProps {
                 Handler = function,
@@ -73,6 +82,10 @@ namespace Cdk
                     MetricsEnabled = true,
                 },
                 RestApiName = $"{appName}APILambdaRestApi",
+                DefaultMethodOptions = new MethodOptions {
+                    AuthorizationType = AuthorizationType.COGNITO,
+                    Authorizer = cognitoUserPoolsAuthorizer
+                },
             });
 
             // Creación de la CfnApiMapping para el API Gateway...
