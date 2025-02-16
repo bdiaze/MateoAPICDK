@@ -3,10 +3,10 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-string cognitoAppClientId = Environment.GetEnvironmentVariable("COGNITO_APP_CLIENT_ID") ?? throw new ArgumentNullException("COGNITO_APP_CLIENT_ID");
 string cognitoUserPoolId = Environment.GetEnvironmentVariable("COGNITO_USER_POOL_ID") ?? throw new ArgumentNullException("COGNITO_USER_POOL_ID");
 string cognitoRegion = Environment.GetEnvironmentVariable("COGNITO_REGION") ?? throw new ArgumentNullException("COGNITO_REGION");
 string[] allowedDomains = Environment.GetEnvironmentVariable("ALLOWED_DOMAINS")?.Split(",") ?? throw new ArgumentNullException("ALLOWED_DOMAINS");
+string[] cognitoAppClientId = Environment.GetEnvironmentVariable("COGNITO_APP_CLIENT_ID")?.Split(",") ?? throw new ArgumentNullException("COGNITO_APP_CLIENT_ID");
 
 
 builder.Services.AddControllers();
@@ -25,10 +25,10 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options => {
         options.Authority = $"https://cognito-idp.{cognitoRegion}.amazonaws.com/{cognitoUserPoolId}";
+        options.MetadataAddress = $"https://cognito-idp.{cognitoRegion}.amazonaws.com/{cognitoUserPoolId}/.well-known/openid-configuration";
         options.TokenValidationParameters = new TokenValidationParameters {
-            ValidateAudience = true,
-            ValidAudience = cognitoAppClientId,
-            ValidateLifetime = true
+            ValidAudiences = cognitoAppClientId,
+            ValidateIssuerSigningKey = true,
         };
     });
 
