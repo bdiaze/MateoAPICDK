@@ -25,6 +25,7 @@ jobs:
             MEMORY_SIZE: ${{ vars.MEMORY_SIZE }}
             DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
             API_MAPPING_KEY: ${{ vars.API_MAPPING_KEY }}
+            CONNECTION_STRING: ${{ secrets.CONNECTION_STRING }}
         steps:
             - name: Checkout Repositorio
               uses: actions/checkout@v4

@@ -1,5 +1,8 @@
+using MateoAPI.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,10 +11,14 @@ string cognitoRegion = Environment.GetEnvironmentVariable("COGNITO_REGION") ?? t
 string[] allowedDomains = Environment.GetEnvironmentVariable("ALLOWED_DOMAINS")?.Split(",") ?? throw new ArgumentNullException("ALLOWED_DOMAINS");
 string[] cognitoAppClientId = Environment.GetEnvironmentVariable("COGNITO_APP_CLIENT_ID")?.Split(",") ?? throw new ArgumentNullException("COGNITO_APP_CLIENT_ID");
 
+string connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING") ?? throw new ArgumentNullException("CONNECTION_STRING");
+
 
 builder.Services.AddControllers();
 
 builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi);
+
+builder.Services.AddDbContextPool<MateoDbContext>(options => options.UseNpgsql(connectionString));
 
 builder.Services.AddCors(item => {
     item.AddPolicy("CORSPolicy", builder => {
@@ -29,6 +36,7 @@ builder.Services
         options.TokenValidationParameters = new TokenValidationParameters {
             ValidAudiences = cognitoAppClientId,
             ValidateIssuerSigningKey = true,
+            NameClaimType = ClaimTypes.NameIdentifier,
         };
     });
 
