@@ -2,6 +2,7 @@ using Amazon.CDK;
 using Amazon.CDK.AWS.APIGateway;
 using Amazon.CDK.AWS.Apigatewayv2;
 using Amazon.CDK.AWS.Cognito;
+using Amazon.CDK.AWS.EC2;
 using Amazon.CDK.AWS.IAM;
 using Amazon.CDK.AWS.Lambda;
 using Amazon.CDK.AWS.Logs;
@@ -23,14 +24,37 @@ namespace Cdk
             string memorySize = System.Environment.GetEnvironmentVariable("MEMORY_SIZE")!;
             string domainName = System.Environment.GetEnvironmentVariable("DOMAIN_NAME")!;
             string apiMappingKey = System.Environment.GetEnvironmentVariable("API_MAPPING_KEY")!;
+            string vpcId = System.Environment.GetEnvironmentVariable("VPC_ID")!;
+            string subnetId1 = System.Environment.GetEnvironmentVariable("SUBNET_ID_1")!;
+            string subnetId2 = System.Environment.GetEnvironmentVariable("SUBNET_ID_2")!;
+            string rdsSecurityGroupId = System.Environment.GetEnvironmentVariable("RDS_SECURITY_GROUP_ID")!;
 
             // Variables de entorno de la lambda...
             string cognitoAppClientId = System.Environment.GetEnvironmentVariable("COGNITO_APP_CLIENT_ID")!;
             string cognitoUserPoolId = System.Environment.GetEnvironmentVariable("COGNITO_USER_POOL_ID")!;
             string cognitoRegion = System.Environment.GetEnvironmentVariable("COGNITO_REGION")!;
             string allowedDomains = System.Environment.GetEnvironmentVariable("ALLOWED_DOMAINS")!;
-
             string connectionString = System.Environment.GetEnvironmentVariable("CONNECTION_STRING");
+
+            // Se obtiene la VPC y subnets...
+            IVpc vpc = Vpc.FromLookup(this, $"{appName}Vpc", new VpcLookupOptions {
+                VpcId = vpcId
+            });
+
+            ISubnet subnet1 = Subnet.FromSubnetId(this, $"{appName}Subnet1", subnetId1);
+            ISubnet subnet2 = Subnet.FromSubnetId(this, $"{appName}Subnet2", subnetId2);
+
+            // Se crea security group para la lambda y se enlaza con security group de RDS...
+            SecurityGroup securityGroup = new SecurityGroup(this, $"{appName}LambdaSecurityGroupForRDS", new SecurityGroupProps {
+                Vpc = vpc,
+                SecurityGroupName = $"{appName}LambdaSecurityGroupForRDS",
+                Description = $"{appName} Lambda Security Group For RDS",
+                AllowAllOutbound = true,
+            });
+
+            ISecurityGroup rdsSecurityGroup = SecurityGroup.FromSecurityGroupId(this, $"{appName}RDSSecurityGroup", rdsSecurityGroupId);
+            rdsSecurityGroup.AddIngressRule(securityGroup, Port.POSTGRES, "Allow connection from Lambda to RDS");
+
 
             // Creación de log group lambda...
             LogGroup logGroup = new LogGroup(this, $"{appName}APILogGroup", new LogGroupProps {
@@ -55,7 +79,11 @@ namespace Cdk
                     { "COGNITO_REGION", cognitoRegion },
                     { "ALLOWED_DOMAINS", allowedDomains },
                     { "CONNECTION_STRING", connectionString },
-                }
+                },
+                Vpc = vpc,
+                VpcSubnets = new SubnetSelection {
+                    Subnets = [subnet1, subnet2]
+                },
             });
 
             // Creación de access logs...
@@ -88,7 +116,7 @@ namespace Cdk
                 DefaultMethodOptions = new MethodOptions {
                     AuthorizationType = AuthorizationType.COGNITO,
                     Authorizer = cognitoUserPoolsAuthorizer
-                },
+                },            
             });
 
             // Creación de la CfnApiMapping para el API Gateway...

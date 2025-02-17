@@ -26,6 +26,10 @@ jobs:
             DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
             API_MAPPING_KEY: ${{ vars.API_MAPPING_KEY }}
             CONNECTION_STRING: ${{ secrets.CONNECTION_STRING }}
+            VPC_ID: ${{ vars.VPC_ID }}
+            SUBNET_ID_1: ${{ vars.SUBNET_ID_1 }}
+            SUBNET_ID_2: ${{ vars.SUBNET_ID_2 }}
+            RDS_SECURITY_GROUP_ID: ${{ vars.RDS_SECURITY_GROUP_ID }}
         steps:
             - name: Checkout Repositorio
               uses: actions/checkout@v4
