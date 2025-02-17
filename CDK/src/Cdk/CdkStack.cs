@@ -84,6 +84,7 @@ namespace Cdk
                 VpcSubnets = new SubnetSelection {
                     Subnets = [subnet1, subnet2]
                 },
+                SecurityGroups = [securityGroup],
             });
 
             // Creación de access logs...
