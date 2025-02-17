@@ -30,6 +30,8 @@ namespace Cdk
             string cognitoRegion = System.Environment.GetEnvironmentVariable("COGNITO_REGION")!;
             string allowedDomains = System.Environment.GetEnvironmentVariable("ALLOWED_DOMAINS")!;
 
+            string connectionString = System.Environment.GetEnvironmentVariable("CONNECTION_STRING");
+
             // Creación de log group lambda...
             LogGroup logGroup = new LogGroup(this, $"{appName}APILogGroup", new LogGroupProps {
                 LogGroupName = $"/aws/lambda/{appName}APILambdaFunction/logs",
@@ -52,6 +54,7 @@ namespace Cdk
                     { "COGNITO_USER_POOL_ID", cognitoUserPoolId },
                     { "COGNITO_REGION", cognitoRegion },
                     { "ALLOWED_DOMAINS", allowedDomains },
+                    { "CONNECTION_STRING", connectionString },
                 }
             });
 
