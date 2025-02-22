@@ -1,10 +1,12 @@
 ﻿using Amazon.Lambda.Core;
 using MateoAPI.Entities.Contexts;
 using MateoAPI.Entities.Models;
+using MateoAPI.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace MateoAPI.Controllers {
     [Authorize]
@@ -28,14 +30,46 @@ namespace MateoAPI.Controllers {
 
                 LambdaLogger.Log(
                     $"[GET] - [EntrenamientoController] - [Listar] - [{stopwatch.ElapsedMilliseconds} ms] - [200] - " +
-                    $"Se obtienen los entrenamientos del usuario {User.Identity!.Name} para los filtros de inicio {inicio} y termino {termino}: {entrenamientos.Count} entrenamientos.");
+                    $"Se obtienen correctamente los entrenamientos del usuario {User.Identity!.Name} para los filtros de inicio {inicio.ToString(CultureInfo.InvariantCulture)} y termino {termino.ToString(CultureInfo.InvariantCulture)}: {entrenamientos.Count} entrenamientos.");
 
                 return Ok(entrenamientos);
             } catch (Exception ex) {
                 LambdaLogger.Log(
                     $"[GET] - [EntrenamientoController] - [Listar] - [{stopwatch.ElapsedMilliseconds} ms] - [500] - " +
-                    $"Ocurrió un error al obtener los entrenamientos del usuario {User.Identity!.Name} para los filtros de inicio {inicio} y termino {termino}. " +
+                    $"Ocurrió un error al obtener los entrenamientos del usuario {User.Identity!.Name} para los filtros de inicio {inicio.ToString(CultureInfo.InvariantCulture)} y termino {termino.ToString(CultureInfo.InvariantCulture)}. " +
                     $"{ex.ToString()}");                
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        [Route("[action]")]
+        [HttpPost]
+        public async Task<ActionResult<Entrenamiento>> Crear(EntEntrenamiento entEntrenamiento) {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            try {
+                Entrenamiento entrenamiento = new Entrenamiento { 
+                    IdUsuario = User.Identity!.Name!,
+                    Inicio = entEntrenamiento.Inicio,
+                    Termino = entEntrenamiento.Termino,
+                    IdTipoEjercicio = entEntrenamiento.IdTipoEjercicio,
+                    Serie = entEntrenamiento.Serie,
+                    Repeticiones = entEntrenamiento.Repeticiones,
+                    SegundosEntrenamiento = entEntrenamiento.SegundosEntrenamiento,
+                    SegundosDescanso = entEntrenamiento.SegundosDescanso
+                };
+                await _context.Entrenamientos.AddAsync(entrenamiento);
+                await _context.SaveChangesAsync();
+
+                LambdaLogger.Log(
+                    $"[POST] - [EntrenamientoController] - [Crear] - [{stopwatch.ElapsedMilliseconds} ms] - [200] - " +
+                    $"Se inserta correctamente el entrenamiento del usuario {User.Identity!.Name} - ID: {entrenamiento.Id}.");
+
+                return Ok(entrenamiento);
+            } catch (Exception ex) {
+                LambdaLogger.Log(
+                    $"[POST] - [EntrenamientoController] - [Crear] - [{stopwatch.ElapsedMilliseconds} ms] - [500] - " +
+                    $"Ocurrió un error al insertar un entrenamiento del usuario {User.Identity!.Name} - {entEntrenamiento.ToString()}. " +
+                    $"{ex.ToString()}");
                 return StatusCode(StatusCodes.Status500InternalServerError);
             }
         }
