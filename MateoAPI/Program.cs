@@ -1,4 +1,4 @@
-using MateoAPI.Data;
+using MateoAPI.Entities.Contexts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;

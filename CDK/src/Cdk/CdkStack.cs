@@ -85,6 +85,7 @@ namespace Cdk
                     Subnets = [subnet1, subnet2]
                 },
                 SecurityGroups = [securityGroup],
+                AllowPublicSubnet = true,
             });
 
             // Creación de access logs...

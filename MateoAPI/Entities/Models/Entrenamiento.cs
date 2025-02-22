@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace MateoAPI.Models {
+namespace MateoAPI.Entities.Models {
     [Table("entrenamiento", Schema = "mateo")]
     public class Entrenamiento {
         [Required]
@@ -20,7 +20,7 @@ namespace MateoAPI.Models {
         [Column("termino")]
         public DateTime Termino { get; set; }
 
-        [Column("id_tipo_entrenamiento")]
+        [Column("id_tipo_ejercicio")]
         public int? IdTipoEjercicio { get; set; }
 
         [Column("serie")]

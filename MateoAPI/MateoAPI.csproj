@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer.Hosting" Version="1.7.3" />
+    <PackageReference Include="AWSSDK.Lambda" Version="3.7.411.42" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.13" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.2">
@@ -27,6 +28,8 @@
   <ItemGroup>
     <Folder Include="Interfaces\" />
     <Folder Include="Migrations\" />
+    <Folder Include="Models\" />
+    <Folder Include="Repositories\" />
   </ItemGroup>
 
 </Project>
