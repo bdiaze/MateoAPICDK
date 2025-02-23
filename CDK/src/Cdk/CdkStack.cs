@@ -84,43 +84,37 @@ namespace Cdk
                     ManagedPolicy.FromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"),
                     ManagedPolicy.FromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"),
                 ],
+                InlinePolicies = new Dictionary<string, PolicyDocument> {
+                    {
+                        $"{appName}APILambdaPolicy",
+                        new PolicyDocument(new PolicyDocumentProps {
+                            Statements = [
+                                new PolicyStatement(new PolicyStatementProps{
+                                    Sid = $"{appName}AccessToSecretManager",
+                                    Actions = [
+                                        "secretsmanager:GetSecretValue"
+                                    ],
+                                    Resources = [
+                                        Secret.FromSecretNameV2(this, $"{appName}SecretRDSPostgreSQL", secretNameConnectionString).SecretArn,
+                                    ],
+                                }),
+                                new PolicyStatement(new PolicyStatementProps{
+                                    Sid = $"{appName}AccessToParameterStore",
+                                    Actions = [
+                                        "ssm:GetParameter"
+                                    ],
+                                    Resources = [
+                                        stringParameterCognitoRegion.ParameterArn,
+                                        stringParameterCognitoUserPoolId.ParameterArn,
+                                        stringParameterCognitoUserPoolClientId.ParameterArn,
+                                        stringParameterApiAllowedDomains.ParameterArn,
+                                    ],
+                                })
+                            ]
+                        })
+                    }
+                }
             });
-
-
-            // Se crea politica para acceso a SecretManager y a ParameterStore...
-            Policy policy = new(this, $"{appName}APILambdaPolicy", new PolicyProps {
-                PolicyName = $"{appName}APILambdaPolicy",
-                Statements = [
-                    new PolicyStatement(new PolicyStatementProps{ 
-                        Sid = $"{appName}AccessToSecretManager",
-                        Actions = [
-                            "secretsmanager:GetSecretValue"
-                        ],
-                        Resources = [
-                            Secret.FromSecretNameV2(this, $"{appName}SecretRDSPostgreSQL", secretNameConnectionString).SecretArn,
-                        ],
-                        Principals = [
-                            new ArnPrincipal(roleLambda.RoleArn)
-                        ]
-                    }),
-                    new PolicyStatement(new PolicyStatementProps{
-                        Sid = $"{appName}AccessToParameterStore",
-                        Actions = [
-                            "ssm:GetParameter"
-                        ],
-                        Resources = [
-                            stringParameterCognitoRegion.ParameterArn,
-                            stringParameterCognitoUserPoolId.ParameterArn,
-                            stringParameterCognitoUserPoolClientId.ParameterArn,
-                            stringParameterApiAllowedDomains.ParameterArn,
-                        ],
-                        Principals = [
-                            new ArnPrincipal(roleLambda.RoleArn)
-                        ]
-                    })
-                ]
-            });
-            policy.AttachToRole(roleLambda);
 
             // Creación de la función lambda...
             Function function = new(this, $"{appName}APILambdaFunction", new FunctionProps {
