@@ -6,6 +6,8 @@ using Amazon.CDK.AWS.EC2;
 using Amazon.CDK.AWS.IAM;
 using Amazon.CDK.AWS.Lambda;
 using Amazon.CDK.AWS.Logs;
+using Amazon.CDK.AWS.SecretsManager;
+using Amazon.CDK.AWS.SSM;
 using Constructs;
 using System;
 using System.Collections.Generic;
@@ -15,8 +17,7 @@ namespace Cdk
 {
     public class CdkStack : Stack
     {
-        internal CdkStack(Construct scope, string id, IStackProps props = null) : base(scope, id, props)
-        {
+        internal CdkStack(Construct scope, string id, IStackProps props = null) : base(scope, id, props) {
             string appName = System.Environment.GetEnvironmentVariable("APP_NAME")!;
             string publishZip = System.Environment.GetEnvironmentVariable("PUBLISH_ZIP")!;
             string handler = System.Environment.GetEnvironmentVariable("HANDLER")!;
@@ -28,13 +29,14 @@ namespace Cdk
             string subnetId1 = System.Environment.GetEnvironmentVariable("SUBNET_ID_1")!;
             string subnetId2 = System.Environment.GetEnvironmentVariable("SUBNET_ID_2")!;
             string rdsSecurityGroupId = System.Environment.GetEnvironmentVariable("RDS_SECURITY_GROUP_ID")!;
+            string allowedDomains = System.Environment.GetEnvironmentVariable("ALLOWED_DOMAINS")!;
 
             // Variables de entorno de la lambda...
-            string cognitoAppClientId = System.Environment.GetEnvironmentVariable("COGNITO_APP_CLIENT_ID")!;
-            string cognitoUserPoolId = System.Environment.GetEnvironmentVariable("COGNITO_USER_POOL_ID")!;
-            string cognitoRegion = System.Environment.GetEnvironmentVariable("COGNITO_REGION")!;
-            string allowedDomains = System.Environment.GetEnvironmentVariable("ALLOWED_DOMAINS")!;
-            string connectionString = System.Environment.GetEnvironmentVariable("CONNECTION_STRING");
+            string secretNameConnectionString = System.Environment.GetEnvironmentVariable("SECRET_NAME_CONNECTION_STRING");
+            string parameterNameCognitoRegion = System.Environment.GetEnvironmentVariable("PARAMETER_NAME_COGNITO_REGION")!;
+            string parameterNameCognitoUserPoolId = System.Environment.GetEnvironmentVariable("PARAMETER_NAME_COGNITO_USER_POOL_ID")!;
+            string parameterNameCognitoUserPoolClientId = System.Environment.GetEnvironmentVariable("PARAMETER_NAME_COGNITO_USER_POOL_CLIENT_ID")!;
+            string parameterNameApiAllowedDomains = System.Environment.GetEnvironmentVariable("PARAMETER_NAME_API_ALLOWED_DOMAINS")!;
 
             // Se obtiene la VPC y subnets...
             IVpc vpc = Vpc.FromLookup(this, $"{appName}Vpc", new VpcLookupOptions {
@@ -45,7 +47,7 @@ namespace Cdk
             ISubnet subnet2 = Subnet.FromSubnetId(this, $"{appName}Subnet2", subnetId2);
 
             // Se crea security group para la lambda y se enlaza con security group de RDS...
-            SecurityGroup securityGroup = new SecurityGroup(this, $"{appName}LambdaSecurityGroupForRDS", new SecurityGroupProps {
+            SecurityGroup securityGroup = new(this, $"{appName}LambdaSecurityGroupForRDS", new SecurityGroupProps {
                 Vpc = vpc,
                 SecurityGroupName = $"{appName}LambdaSecurityGroupForRDS",
                 Description = $"{appName} Lambda Security Group For RDS",
@@ -57,14 +59,65 @@ namespace Cdk
 
 
             // Creación de log group lambda...
-            LogGroup logGroup = new LogGroup(this, $"{appName}APILogGroup", new LogGroupProps {
+            LogGroup logGroup = new(this, $"{appName}APILogGroup", new LogGroupProps {
                 LogGroupName = $"/aws/lambda/{appName}APILambdaFunction/logs",
                 Retention = RetentionDays.ONE_MONTH,
                 RemovalPolicy = RemovalPolicy.DESTROY
             });
 
+            IStringParameter stringParameterCognitoRegion = StringParameter.FromStringParameterName(this, $"{appName}StringParameterCognitoRegion", parameterNameCognitoRegion);
+            IStringParameter stringParameterCognitoUserPoolId = StringParameter.FromStringParameterName(this, $"{appName}StringParameterCognitoUserPoolId", parameterNameCognitoUserPoolId);
+            IStringParameter stringParameterCognitoUserPoolClientId = StringParameter.FromStringParameterName(this, $"{appName}StringParameterCognitoUserPoolClientId", parameterNameCognitoUserPoolClientId);
+            StringParameter stringParameterApiAllowedDomains = new(this, $"{appName}StringParameterAllowedDomains", new StringParameterProps {
+                ParameterName = $"{parameterNameApiAllowedDomains}",
+                Description = $"Allowed Domains de la aplicacion {appName}",
+                StringValue = allowedDomains,
+                Tier = ParameterTier.STANDARD,
+            });
+
+            // Creación de role para la función lambda...
+            IRole roleLambda = new Role(this, $"{appName}APILambdaRole", new RoleProps {
+                RoleName = $"{appName}APILambdaRole",
+                Description = $"Role para API Lambda de {appName}",
+                AssumedBy = new ServicePrincipal("lambda.amazonaws.com"),
+                ManagedPolicies = [
+                    ManagedPolicy.FromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"),
+                    ManagedPolicy.FromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"),
+                ],
+            });
+
+
+            // Se crea politica para acceso a SecretManager y a ParameterStore...
+            Policy policy = new(this, $"{appName}APILambdaPolicy", new PolicyProps {
+                PolicyName = $"{appName}APILambdaPolicy",
+                Statements = [
+                    new PolicyStatement(new PolicyStatementProps{ 
+                        Sid = $"{appName}AccessToSecretManager",
+                        Actions = [
+                            "secretsmanager:GetSecretValue"
+                        ],
+                        Resources = [
+                            Secret.FromSecretNameV2(this, $"{appName}SecretRDSPostgreSQL", secretNameConnectionString).SecretArn,
+                        ]
+                    }),
+                    new PolicyStatement(new PolicyStatementProps{
+                        Sid = $"{appName}AccessToParameterStore",
+                        Actions = [
+                            "ssm:GetParameter"
+                        ],
+                        Resources = [
+                            stringParameterCognitoRegion.ParameterArn,
+                            stringParameterCognitoUserPoolId.ParameterArn,
+                            stringParameterCognitoUserPoolClientId.ParameterArn,
+                            stringParameterApiAllowedDomains.ParameterArn,
+                        ]
+                    })
+                ]
+            });
+            policy.AttachToRole(roleLambda);
+
             // Creación de la función lambda...
-            Function function = new Function(this, $"{appName}APILambdaFunction", new FunctionProps {
+            Function function = new(this, $"{appName}APILambdaFunction", new FunctionProps {
                 Runtime = Runtime.DOTNET_8,
                 Handler = handler,
                 Code = Code.FromAsset(publishZip),
@@ -75,11 +128,11 @@ namespace Cdk
                 LogGroup = logGroup,
                 Environment = new Dictionary<string, string> {
                     { "APP_NAME", appName },
-                    { "COGNITO_APP_CLIENT_ID", cognitoAppClientId },
-                    { "COGNITO_USER_POOL_ID", cognitoUserPoolId },
-                    { "COGNITO_REGION", cognitoRegion },
-                    { "ALLOWED_DOMAINS", allowedDomains },
-                    { "CONNECTION_STRING", connectionString },
+                    { "SECRET_NAME_CONNECTION_STRING", secretNameConnectionString },
+                    { "PARAMETER_NAME_COGNITO_REGION", parameterNameCognitoRegion },
+                    { "PARAMETER_NAME_COGNITO_USER_POOL_ID", parameterNameCognitoUserPoolId },
+                    { "PARAMETER_NAME_COGNITO_USER_POOL_CLIENT_ID", parameterNameCognitoUserPoolClientId },
+                    { "PARAMETER_NAME_API_ALLOWED_DOMAINS", parameterNameApiAllowedDomains },
                 },
                 Vpc = vpc,
                 VpcSubnets = new SubnetSelection {
@@ -87,28 +140,28 @@ namespace Cdk
                 },
                 SecurityGroups = [securityGroup],
                 AllowPublicSubnet = true,
+                Role = roleLambda,
             });
 
             // Creación de access logs...
-            LogGroup logGroupAccessLogs = new LogGroup(this, $"{appName}APILambdaFunctionLogGroup", new LogGroupProps {
+            LogGroup logGroupAccessLogs = new(this, $"{appName}APILambdaFunctionLogGroup", new LogGroupProps {
                 LogGroupName = $"/aws/lambda/{appName}APILambdaFunction/access_logs",
                 Retention = RetentionDays.ONE_MONTH,
                 RemovalPolicy = RemovalPolicy.DESTROY
             });
 
-            IUserPool userPool = UserPool.FromUserPoolId(this, $"{appName}APIUserPool", cognitoUserPoolId);
-
             // Se crea authorizer para el apigateway...
-            CognitoUserPoolsAuthorizer cognitoUserPoolsAuthorizer = new CognitoUserPoolsAuthorizer(this, $"{appName}APIAuthorizer", new CognitoUserPoolsAuthorizerProps {
+            IUserPool userPool = UserPool.FromUserPoolId(this, $"{appName}APIUserPool", stringParameterCognitoUserPoolId.StringValue);
+            CognitoUserPoolsAuthorizer cognitoUserPoolsAuthorizer = new(this, $"{appName}APIAuthorizer", new CognitoUserPoolsAuthorizerProps {
                 CognitoUserPools = [userPool],
                 AuthorizerName = $"{appName}APIAuthorizer",
             });
 
             // Creación de la LambdaRestApi...
-            LambdaRestApi lambdaRestApi = new LambdaRestApi(this, $"{appName}APILambdaRestApi", new LambdaRestApiProps {
+            LambdaRestApi lambdaRestApi = new(this, $"{appName}APILambdaRestApi", new LambdaRestApiProps {
                 Handler = function,
                 DefaultCorsPreflightOptions = new CorsOptions {
-                    AllowOrigins = allowedDomains.Split(","),
+                    AllowOrigins = stringParameterApiAllowedDomains.StringValue.Split(","),
                 },
                 DeployOptions = new StageOptions {
                     AccessLogDestination = new LogGroupLogDestination(logGroupAccessLogs),
@@ -123,7 +176,7 @@ namespace Cdk
             });
 
             // Creación de la CfnApiMapping para el API Gateway...
-            CfnApiMapping apiMapping = new CfnApiMapping(this, $"{appName}APIApiMapping", new CfnApiMappingProps {
+            CfnApiMapping apiMapping = new(this, $"{appName}APIApiMapping", new CfnApiMappingProps {
                 DomainName = domainName,
                 ApiMappingKey = apiMappingKey,
                 ApiId = lambdaRestApi.RestApiId,
@@ -131,8 +184,8 @@ namespace Cdk
             });
 
             // Se configura permisos para la ejecucíon de la Lambda desde el API Gateway...
-            ArnPrincipal arnPrincipal = new ArnPrincipal("apigateway.amazonaws.com");
-            Permission permission = new Permission {
+            ArnPrincipal arnPrincipal = new("apigateway.amazonaws.com");
+            Permission permission = new() {
                 Scope = this,
                 Action = "lambda:InvokeFunction",
                 Principal = arnPrincipal,

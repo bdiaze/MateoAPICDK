@@ -1,4 +1,5 @@
 using MateoAPI.Entities.Contexts;
+using MateoAPI.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -6,19 +7,26 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
-string cognitoUserPoolId = Environment.GetEnvironmentVariable("COGNITO_USER_POOL_ID") ?? throw new ArgumentNullException("COGNITO_USER_POOL_ID");
-string cognitoRegion = Environment.GetEnvironmentVariable("COGNITO_REGION") ?? throw new ArgumentNullException("COGNITO_REGION");
-string[] allowedDomains = Environment.GetEnvironmentVariable("ALLOWED_DOMAINS")?.Split(",") ?? throw new ArgumentNullException("ALLOWED_DOMAINS");
-string[] cognitoAppClientId = Environment.GetEnvironmentVariable("COGNITO_APP_CLIENT_ID")?.Split(",") ?? throw new ArgumentNullException("COGNITO_APP_CLIENT_ID");
+string secretNameConnectionString = Environment.GetEnvironmentVariable("SECRET_NAME_CONNECTION_STRING") ?? throw new ArgumentNullException("SECRET_NAME_CONNECTION_STRING");
+string parameterNameCognitoRegion = Environment.GetEnvironmentVariable("PARAMETER_NAME_COGNITO_REGION") ?? throw new ArgumentNullException("PARAMETER_NAME_COGNITO_REGION");
+string parameterNameCognitoUserPoolId = Environment.GetEnvironmentVariable("PARAMETER_NAME_COGNITO_USER_POOL_ID") ?? throw new ArgumentNullException("PARAMETER_NAME_COGNITO_USER_POOL_ID");
+string parameterNameCognitoUserPoolClientId = Environment.GetEnvironmentVariable("PARAMETER_NAME_COGNITO_USER_POOL_CLIENT_ID") ?? throw new ArgumentNullException("PARAMETER_NAME_COGNITO_USER_POOL_CLIENT_ID");
+string parameterNameApiAllowedDomains = Environment.GetEnvironmentVariable("PARAMETER_NAME_API_ALLOWED_DOMAINS") ?? throw new ArgumentNullException("PARAMETER_NAME_API_ALLOWED_DOMAINS");
 
-string connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING") ?? throw new ArgumentNullException("CONNECTION_STRING");
-
+dynamic connectionString = await SecretManager.ObtenerSecreto(secretNameConnectionString);
+string cognitoRegion = await ParameterStore.ObtenerParametro(parameterNameCognitoRegion);
+string cognitoUserPoolId = await ParameterStore.ObtenerParametro(parameterNameCognitoUserPoolId);
+string[] cognitoAppClientId = (await ParameterStore.ObtenerParametro(parameterNameCognitoUserPoolClientId)).Split(",");
+string[] allowedDomains = (await ParameterStore.ObtenerParametro(parameterNameApiAllowedDomains)).Split(",");
 
 builder.Services.AddControllers();
 
 builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi);
 
-builder.Services.AddDbContextPool<MateoDbContext>(options => options.UseNpgsql(connectionString));
+builder.Services.AddDbContextPool<MateoDbContext>(options => options.UseNpgsql(
+    $"Server={connectionString.Host};Port={connectionString.Port};SslMode=prefer;" +
+    $"Database={connectionString.MateoDatabase};User Id={connectionString.MateoUsername};Password='{connectionString.MateoPassword}';"
+));
 
 builder.Services.AddCors(item => {
     item.AddPolicy("CORSPolicy", builder => {

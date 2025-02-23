@@ -25,18 +25,18 @@ namespace MateoAPI.Controllers {
             Stopwatch stopwatch = Stopwatch.StartNew();
             try {
                 List<Entrenamiento> entrenamientos = await _context.Entrenamientos
-                    .Where(e => e.IdUsuario == User.Identity!.Name && e.Inicio >= inicio && e.Termino <= termino)
+                    .Where(e => e.IdUsuario == User.Identity!.Name && e.Inicio >= inicio && e.Inicio <= termino)
                     .ToListAsync();
 
                 LambdaLogger.Log(
                     $"[GET] - [EntrenamientoController] - [Listar] - [{stopwatch.ElapsedMilliseconds} ms] - [200] - " +
-                    $"Se obtienen correctamente los entrenamientos del usuario {User.Identity!.Name} para los filtros de inicio {inicio.ToString(CultureInfo.InvariantCulture)} y termino {termino.ToString(CultureInfo.InvariantCulture)}: {entrenamientos.Count} entrenamientos.");
+                    $"Se obtienen correctamente los entrenamientos del usuario {User.Identity!.Name} para los filtros de inicio {inicio.ToString("O")} y termino {termino.ToString("O")}: {entrenamientos.Count} entrenamientos.");
 
                 return Ok(entrenamientos);
             } catch (Exception ex) {
                 LambdaLogger.Log(
                     $"[GET] - [EntrenamientoController] - [Listar] - [{stopwatch.ElapsedMilliseconds} ms] - [500] - " +
-                    $"Ocurrió un error al obtener los entrenamientos del usuario {User.Identity!.Name} para los filtros de inicio {inicio.ToString(CultureInfo.InvariantCulture)} y termino {termino.ToString(CultureInfo.InvariantCulture)}. " +
+                    $"Ocurrió un error al obtener los entrenamientos del usuario {User.Identity!.Name} para los filtros de inicio {inicio.ToString("O")} y termino {termino.ToString("O")}. " +
                     $"{ex.ToString()}");                
                 return StatusCode(StatusCodes.Status500InternalServerError);
             }

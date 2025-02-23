@@ -8,6 +8,7 @@ on:
 jobs:
     build:
         runs-on: ubuntu-latest
+        environment: Production
         permissions:
             contents: read
             id-token: write
@@ -15,21 +16,23 @@ jobs:
             APP_NAME: ${{ vars.APP_NAME }}
             ACCOUNT_AWS: ${{ vars.ACCOUNT_AWS }}
             REGION_AWS: ${{ vars.REGION_AWS }}
-            COGNITO_APP_CLIENT_ID: ${{ vars.COGNITO_APP_CLIENT_ID }}
-            COGNITO_USER_POOL_ID: ${{ vars.COGNITO_USER_POOL_ID }}
-            COGNITO_REGION: ${{ vars.COGNITO_REGION }}
-            ALLOWED_DOMAINS: ${{ vars.ALLOWED_DOMAINS }}
             PUBLISH_ZIP: ${{ vars.PUBLISH_ZIP }}
             HANDLER: ${{ vars.HANDLER }}
             TIMEOUT: ${{ vars.TIMEOUT }}
             MEMORY_SIZE: ${{ vars.MEMORY_SIZE }}
             DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
             API_MAPPING_KEY: ${{ vars.API_MAPPING_KEY }}
-            CONNECTION_STRING: ${{ secrets.CONNECTION_STRING }}
             VPC_ID: ${{ vars.VPC_ID }}
             SUBNET_ID_1: ${{ vars.SUBNET_ID_1 }}
             SUBNET_ID_2: ${{ vars.SUBNET_ID_2 }}
             RDS_SECURITY_GROUP_ID: ${{ vars.RDS_SECURITY_GROUP_ID }}
+            ALLOWED_DOMAINS: ${{ vars.ALLOWED_DOMAINS }}
+            SECRET_NAME_CONNECTION_STRING: ${{ vars.SECRET_NAME_CONNECTION_STRING }}
+            PARAMETER_NAME_COGNITO_REGION: ${{ vars.PARAMETER_NAME_COGNITO_REGION }}
+            PARAMETER_NAME_COGNITO_USER_POOL_ID: ${{ vars.PARAMETER_NAME_COGNITO_USER_POOL_ID }}
+            PARAMETER_NAME_COGNITO_USER_POOL_CLIENT_ID: ${{ vars.PARAMETER_NAME_COGNITO_USER_POOL_CLIENT_ID }}
+            PARAMETER_NAME_API_ALLOWED_DOMAINS: ${{ vars.PARAMETER_NAME_API_ALLOWED_DOMAINS }}
+            
         steps:
             - name: Checkout Repositorio
               uses: actions/checkout@v4

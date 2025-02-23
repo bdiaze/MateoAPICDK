@@ -19,7 +19,7 @@ namespace MateoAPI.Models {
         public short SegundosDescanso { get; set; }
 
         public override string ToString() {
-            return $"Inicio: {Inicio.ToString(CultureInfo.InvariantCulture)} - Termino: {Termino.ToString(CultureInfo.InvariantCulture)} - IdTipoEjercicio: {IdTipoEjercicio} - " +
+            return $"Inicio: {Inicio.ToString("O")} - Termino: {Termino.ToString("O")} - IdTipoEjercicio: {IdTipoEjercicio} - " +
                 $"Serie: {Serie} - Repeticiones: {Repeticiones} - SegundosEntrenamiento: {SegundosEntrenamiento} - SegundosDescanso: {SegundosDescanso}";
         }
     }
