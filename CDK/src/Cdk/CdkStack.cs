@@ -32,10 +32,10 @@ namespace Cdk
             string allowedDomains = System.Environment.GetEnvironmentVariable("ALLOWED_DOMAINS")!;
 
             // Variables de entorno de la lambda...
-            string secretNameConnectionString = System.Environment.GetEnvironmentVariable("SECRET_NAME_CONNECTION_STRING");
-            string parameterNameCognitoRegion = System.Environment.GetEnvironmentVariable("PARAMETER_NAME_COGNITO_REGION")!;
-            string parameterNameCognitoUserPoolId = System.Environment.GetEnvironmentVariable("PARAMETER_NAME_COGNITO_USER_POOL_ID")!;
-            string parameterNameCognitoUserPoolClientId = System.Environment.GetEnvironmentVariable("PARAMETER_NAME_COGNITO_USER_POOL_CLIENT_ID")!;
+            string secretArnConnectionString = System.Environment.GetEnvironmentVariable("SECRET_ARN_CONNECTION_STRING");
+            string parameterArnCognitoRegion = System.Environment.GetEnvironmentVariable("PARAMETER_ARN_COGNITO_REGION")!;
+            string parameterArnCognitoUserPoolId = System.Environment.GetEnvironmentVariable("PARAMETER_ARN_COGNITO_USER_POOL_ID")!;
+            string parameterArnCognitoUserPoolClientId = System.Environment.GetEnvironmentVariable("PARAMETER_ARN_COGNITO_USER_POOL_CLIENT_ID")!;
             string parameterNameApiAllowedDomains = System.Environment.GetEnvironmentVariable("PARAMETER_NAME_API_ALLOWED_DOMAINS")!;
 
             // Se obtiene la VPC y subnets...
@@ -65,9 +65,6 @@ namespace Cdk
                 RemovalPolicy = RemovalPolicy.DESTROY
             });
 
-            IStringParameter stringParameterCognitoRegion = StringParameter.FromStringParameterName(this, $"{appName}StringParameterCognitoRegion", parameterNameCognitoRegion);
-            IStringParameter stringParameterCognitoUserPoolId = StringParameter.FromStringParameterName(this, $"{appName}StringParameterCognitoUserPoolId", parameterNameCognitoUserPoolId);
-            IStringParameter stringParameterCognitoUserPoolClientId = StringParameter.FromStringParameterName(this, $"{appName}StringParameterCognitoUserPoolClientId", parameterNameCognitoUserPoolClientId);
             StringParameter stringParameterApiAllowedDomains = new(this, $"{appName}StringParameterAllowedDomains", new StringParameterProps {
                 ParameterName = $"{parameterNameApiAllowedDomains}",
                 Description = $"Allowed Domains de la aplicacion {appName}",
@@ -95,7 +92,7 @@ namespace Cdk
                                         "secretsmanager:GetSecretValue"
                                     ],
                                     Resources = [
-                                        Secret.FromSecretNameV2(this, $"{appName}SecretRDSPostgreSQL", secretNameConnectionString).SecretArn,
+                                        secretArnConnectionString,
                                     ],
                                 }),
                                 new PolicyStatement(new PolicyStatementProps{
@@ -104,9 +101,9 @@ namespace Cdk
                                         "ssm:GetParameter"
                                     ],
                                     Resources = [
-                                        stringParameterCognitoRegion.ParameterArn,
-                                        stringParameterCognitoUserPoolId.ParameterArn,
-                                        stringParameterCognitoUserPoolClientId.ParameterArn,
+                                        parameterArnCognitoRegion,
+                                        parameterArnCognitoUserPoolId,
+                                        parameterArnCognitoUserPoolClientId,
                                         stringParameterApiAllowedDomains.ParameterArn,
                                     ],
                                 })
@@ -128,11 +125,11 @@ namespace Cdk
                 LogGroup = logGroup,
                 Environment = new Dictionary<string, string> {
                     { "APP_NAME", appName },
-                    { "SECRET_NAME_CONNECTION_STRING", secretNameConnectionString },
-                    { "PARAMETER_NAME_COGNITO_REGION", parameterNameCognitoRegion },
-                    { "PARAMETER_NAME_COGNITO_USER_POOL_ID", parameterNameCognitoUserPoolId },
-                    { "PARAMETER_NAME_COGNITO_USER_POOL_CLIENT_ID", parameterNameCognitoUserPoolClientId },
-                    { "PARAMETER_NAME_API_ALLOWED_DOMAINS", parameterNameApiAllowedDomains },
+                    { "SECRET_ARN_CONNECTION_STRING", secretArnConnectionString },
+                    { "PARAMETER_ARN_COGNITO_REGION", parameterArnCognitoRegion },
+                    { "PARAMETER_ARN_COGNITO_USER_POOL_ID", parameterArnCognitoUserPoolId },
+                    { "PARAMETER_ARN_COGNITO_USER_POOL_CLIENT_ID", parameterArnCognitoUserPoolClientId },
+                    { "PARAMETER_ARN_API_ALLOWED_DOMAINS", stringParameterApiAllowedDomains.ParameterArn },
                 },
                 Vpc = vpc,
                 VpcSubnets = new SubnetSelection {
@@ -151,6 +148,7 @@ namespace Cdk
             });
 
             // Se crea authorizer para el apigateway...
+            IStringParameter stringParameterCognitoUserPoolId = StringParameter.FromStringParameterArn(this, $"{appName}StringParameterCognitoUserPoolId", parameterArnCognitoUserPoolId);
             IUserPool userPool = UserPool.FromUserPoolId(this, $"{appName}APIUserPool", stringParameterCognitoUserPoolId.StringValue);
             CognitoUserPoolsAuthorizer cognitoUserPoolsAuthorizer = new(this, $"{appName}APIAuthorizer", new CognitoUserPoolsAuthorizerProps {
                 CognitoUserPools = [userPool],

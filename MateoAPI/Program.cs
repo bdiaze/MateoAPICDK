@@ -7,17 +7,17 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
-string secretNameConnectionString = Environment.GetEnvironmentVariable("SECRET_NAME_CONNECTION_STRING") ?? throw new ArgumentNullException("SECRET_NAME_CONNECTION_STRING");
-string parameterNameCognitoRegion = Environment.GetEnvironmentVariable("PARAMETER_NAME_COGNITO_REGION") ?? throw new ArgumentNullException("PARAMETER_NAME_COGNITO_REGION");
-string parameterNameCognitoUserPoolId = Environment.GetEnvironmentVariable("PARAMETER_NAME_COGNITO_USER_POOL_ID") ?? throw new ArgumentNullException("PARAMETER_NAME_COGNITO_USER_POOL_ID");
-string parameterNameCognitoUserPoolClientId = Environment.GetEnvironmentVariable("PARAMETER_NAME_COGNITO_USER_POOL_CLIENT_ID") ?? throw new ArgumentNullException("PARAMETER_NAME_COGNITO_USER_POOL_CLIENT_ID");
-string parameterNameApiAllowedDomains = Environment.GetEnvironmentVariable("PARAMETER_NAME_API_ALLOWED_DOMAINS") ?? throw new ArgumentNullException("PARAMETER_NAME_API_ALLOWED_DOMAINS");
+string secretArnConnectionString = Environment.GetEnvironmentVariable("SECRET_ARN_CONNECTION_STRING") ?? throw new ArgumentNullException("SECRET_ARN_CONNECTION_STRING");
+string parameterArnCognitoRegion = Environment.GetEnvironmentVariable("PARAMETER_ARN_COGNITO_REGION") ?? throw new ArgumentNullException("PARAMETER_ARN_COGNITO_REGION");
+string parameterArnCognitoUserPoolId = Environment.GetEnvironmentVariable("PARAMETER_ARN_COGNITO_USER_POOL_ID") ?? throw new ArgumentNullException("PARAMETER_ARN_COGNITO_USER_POOL_ID");
+string parameterArnCognitoUserPoolClientId = Environment.GetEnvironmentVariable("PARAMETER_ARN_COGNITO_USER_POOL_CLIENT_ID") ?? throw new ArgumentNullException("PARAMETER_ARN_COGNITO_USER_POOL_CLIENT_ID");
+string parameterArnApiAllowedDomains = Environment.GetEnvironmentVariable("PARAMETER_ARN_API_ALLOWED_DOMAINS") ?? throw new ArgumentNullException("PARAMETER_ARN_API_ALLOWED_DOMAINS");
 
-dynamic connectionString = await SecretManager.ObtenerSecreto(secretNameConnectionString);
-string cognitoRegion = await ParameterStore.ObtenerParametro(parameterNameCognitoRegion);
-string cognitoUserPoolId = await ParameterStore.ObtenerParametro(parameterNameCognitoUserPoolId);
-string[] cognitoAppClientId = (await ParameterStore.ObtenerParametro(parameterNameCognitoUserPoolClientId)).Split(",");
-string[] allowedDomains = (await ParameterStore.ObtenerParametro(parameterNameApiAllowedDomains)).Split(",");
+dynamic connectionString = await SecretManager.ObtenerSecreto(secretArnConnectionString);
+string cognitoRegion = await ParameterStore.ObtenerParametro(parameterArnCognitoRegion);
+string cognitoUserPoolId = await ParameterStore.ObtenerParametro(parameterArnCognitoUserPoolId);
+string[] cognitoAppClientId = (await ParameterStore.ObtenerParametro(parameterArnCognitoUserPoolClientId)).Split(",");
+string[] allowedDomains = (await ParameterStore.ObtenerParametro(parameterArnApiAllowedDomains)).Split(",");
 
 builder.Services.AddControllers();
 
