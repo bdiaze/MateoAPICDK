@@ -98,6 +98,9 @@ namespace Cdk
                         ],
                         Resources = [
                             Secret.FromSecretNameV2(this, $"{appName}SecretRDSPostgreSQL", secretNameConnectionString).SecretArn,
+                        ],
+                        Principals = [
+                            new ArnPrincipal(roleLambda.RoleArn)
                         ]
                     }),
                     new PolicyStatement(new PolicyStatementProps{
@@ -110,6 +113,9 @@ namespace Cdk
                             stringParameterCognitoUserPoolId.ParameterArn,
                             stringParameterCognitoUserPoolClientId.ParameterArn,
                             stringParameterApiAllowedDomains.ParameterArn,
+                        ],
+                        Principals = [
+                            new ArnPrincipal(roleLambda.RoleArn)
                         ]
                     })
                 ]
