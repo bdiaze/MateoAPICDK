@@ -26,7 +26,7 @@ namespace MateoAPI.Controllers {
                     .AsNoTracking()
                     .Where(e => e.IdUsuario == User.Identity!.Name && e.Inicio >= desde && e.Inicio <= hasta)
                     .OrderBy(e => e.IdUsuario)
-                    .OrderBy(e => e.Inicio)
+                    .OrderByDescending(e => e.Inicio)
                     .Skip((numPagina - 1) * cantElemPagina)
                     .Take(cantElemPagina)
                     .ToListAsync();
