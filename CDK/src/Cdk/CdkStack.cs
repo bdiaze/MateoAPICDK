@@ -136,7 +136,6 @@ namespace Cdk
                     Subnets = [subnet1, subnet2]
                 },
                 SecurityGroups = [securityGroup],
-                AllowPublicSubnet = true,
                 Role = roleLambda,
             });
 
