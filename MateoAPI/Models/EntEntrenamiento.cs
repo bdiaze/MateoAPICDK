@@ -3,6 +3,8 @@ using System.Globalization;
 
 namespace MateoAPI.Models {
     public class EntEntrenamiento {
+
+        public Guid IdRequest { get; set; }
         
         public DateTime Inicio { get; set; }
 

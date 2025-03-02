@@ -13,6 +13,10 @@ namespace MateoAPI.Entities.Models {
         public required string IdUsuario { get; set; }
 
         [Required]
+        [Column("id_request")]
+        public required Guid IdRequest { get; set; }
+
+        [Required]
         [Column("inicio")]
         public DateTime Inicio { get; set; }
 

@@ -59,8 +59,28 @@ namespace MateoAPI.Controllers {
         public async Task<ActionResult<Entrenamiento>> Crear(EntEntrenamiento entEntrenamiento) {
             Stopwatch stopwatch = Stopwatch.StartNew();
             try {
-                Entrenamiento entrenamiento = new() { 
+                // Se valida si ya existe un entrenamiento con el ID request (para convertir método en idempotent)...
+                Entrenamiento? entrenamiento = await _context.Entrenamientos.Where(e => e.IdRequest == entEntrenamiento.IdRequest).FirstOrDefaultAsync();
+                if (entrenamiento != null) {
+                    if (entrenamiento.IdUsuario == User.Identity!.Name!) {
+                        LambdaLogger.Log(
+                            $"[POST] - [EntrenamientoController] - [Crear] - [{stopwatch.ElapsedMilliseconds} ms] - [{StatusCodes.Status200OK}] - " +
+                            $"El entrenamiento del usuario {User.Identity!.Name} ya existe, se ignora nuevo ingreso - ID Request: {entrenamiento.IdRequest}.");
+
+                        return Ok(entrenamiento);
+                    } else {
+                        LambdaLogger.Log(
+                            $"[POST] - [EntrenamientoController] - [Crear] - [{stopwatch.ElapsedMilliseconds} ms] - [{StatusCodes.Status400BadRequest}] - " +
+                            $"El ID Request ingresado por {User.Identity!.Name} ya está siendo usado por otro usuario, se ignora nuevo ingreso - ID Request: {entrenamiento.IdRequest}.");
+
+                        return BadRequest();
+                    }
+                }
+
+                // Se crea nuevo entrenamiento...
+                entrenamiento = new() { 
                     IdUsuario = User.Identity!.Name!,
+                    IdRequest = entEntrenamiento.IdRequest,
                     Inicio = entEntrenamiento.Inicio,
                     Termino = entEntrenamiento.Termino,
                     IdTipoEjercicio = entEntrenamiento.IdTipoEjercicio,
