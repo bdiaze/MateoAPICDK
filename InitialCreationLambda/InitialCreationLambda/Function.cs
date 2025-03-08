@@ -106,8 +106,8 @@ public class Function {
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true,
-                
             },
+            EnableRaisingEvents = true,
         };
         process.ErrorDataReceived += (sender, e) => {
             LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ejecución de migración en proceso - Error Data Received: {e.Data}");
@@ -119,6 +119,7 @@ public class Function {
             LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ejecución de migración en proceso - Exited: {e}");
         };
         process.Start();
+        process.WaitForExit(2 * 60 * 1000);
 
         LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ha terminado el proceso de creacion inicial del schema y sus usuarios de aplicacion...");
 
