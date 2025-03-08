@@ -7,5 +7,9 @@ namespace MateoAPI.Entities.Contexts {
         public MateoDbContext(DbContextOptions<MateoDbContext> options) : base(options) { }
 
         public DbSet<Entrenamiento> Entrenamientos { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder) {
+            modelBuilder.UseIdentityAlwaysColumns();
+        }
     }
 }

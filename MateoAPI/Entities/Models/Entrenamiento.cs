@@ -1,11 +1,16 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MateoAPI.Entities.Models {
     [Table("entrenamiento", Schema = "mateo")]
+    [Index(nameof(IdUsuario), nameof(Inicio))]
+    [Index(nameof(IdRequest), IsUnique =true)]
     public class Entrenamiento {
         [Required]
         [Column("id")]
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public long Id { get; set; }
 
         [Required]

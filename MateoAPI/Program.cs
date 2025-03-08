@@ -7,17 +7,33 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
-string secretArnConnectionString = Environment.GetEnvironmentVariable("SECRET_ARN_CONNECTION_STRING") ?? throw new ArgumentNullException("SECRET_ARN_CONNECTION_STRING");
-string parameterArnCognitoRegion = Environment.GetEnvironmentVariable("PARAMETER_ARN_COGNITO_REGION") ?? throw new ArgumentNullException("PARAMETER_ARN_COGNITO_REGION");
-string parameterArnCognitoUserPoolId = Environment.GetEnvironmentVariable("PARAMETER_ARN_COGNITO_USER_POOL_ID") ?? throw new ArgumentNullException("PARAMETER_ARN_COGNITO_USER_POOL_ID");
-string parameterArnCognitoUserPoolClientId = Environment.GetEnvironmentVariable("PARAMETER_ARN_COGNITO_USER_POOL_CLIENT_ID") ?? throw new ArgumentNullException("PARAMETER_ARN_COGNITO_USER_POOL_CLIENT_ID");
-string parameterArnApiAllowedDomains = Environment.GetEnvironmentVariable("PARAMETER_ARN_API_ALLOWED_DOMAINS") ?? throw new ArgumentNullException("PARAMETER_ARN_API_ALLOWED_DOMAINS");
+#if RELEASE
+    string secretArnConnectionString = Environment.GetEnvironmentVariable("SECRET_ARN_CONNECTION_STRING") ?? throw new ArgumentNullException("SECRET_ARN_CONNECTION_STRING");
+    string parameterArnCognitoRegion = Environment.GetEnvironmentVariable("PARAMETER_ARN_COGNITO_REGION") ?? throw new ArgumentNullException("PARAMETER_ARN_COGNITO_REGION");
+    string parameterArnCognitoUserPoolId = Environment.GetEnvironmentVariable("PARAMETER_ARN_COGNITO_USER_POOL_ID") ?? throw new ArgumentNullException("PARAMETER_ARN_COGNITO_USER_POOL_ID");
+    string parameterArnCognitoUserPoolClientId = Environment.GetEnvironmentVariable("PARAMETER_ARN_COGNITO_USER_POOL_CLIENT_ID") ?? throw new ArgumentNullException("PARAMETER_ARN_COGNITO_USER_POOL_CLIENT_ID");
+    string parameterArnApiAllowedDomains = Environment.GetEnvironmentVariable("PARAMETER_ARN_API_ALLOWED_DOMAINS") ?? throw new ArgumentNullException("PARAMETER_ARN_API_ALLOWED_DOMAINS");
 
-dynamic connectionString = await SecretManager.ObtenerSecreto(secretArnConnectionString);
-string cognitoRegion = await ParameterStore.ObtenerParametro(parameterArnCognitoRegion);
-string cognitoUserPoolId = await ParameterStore.ObtenerParametro(parameterArnCognitoUserPoolId);
-string[] cognitoAppClientId = (await ParameterStore.ObtenerParametro(parameterArnCognitoUserPoolClientId)).Split(",");
-string[] allowedDomains = (await ParameterStore.ObtenerParametro(parameterArnApiAllowedDomains)).Split(",");
+    dynamic connectionString = await SecretManager.ObtenerSecreto(secretArnConnectionString);
+    string cognitoRegion = await ParameterStore.ObtenerParametro(parameterArnCognitoRegion);
+    string cognitoUserPoolId = await ParameterStore.ObtenerParametro(parameterArnCognitoUserPoolId);
+    string[] cognitoAppClientId = (await ParameterStore.ObtenerParametro(parameterArnCognitoUserPoolClientId)).Split(",");
+    string[] allowedDomains = (await ParameterStore.ObtenerParametro(parameterArnApiAllowedDomains)).Split(",");
+#else
+    // Se crean variables vacias en formato DEBUG para habilitar las migraciones de EFCore...
+    // Comando para migrar: dotnet ef migrations add [NombreMigración] --project MateoAPI
+    dynamic connectionString = new {
+        Host = "",
+        Port = "",
+        MateoDatabase = "",
+        MateoUsername = "",
+        MateoPassword = ""
+    };
+    string cognitoRegion = "";
+    string cognitoUserPoolId = "";
+    string[] cognitoAppClientId = [ "" ];
+    string[] allowedDomains = [ "" ];
+#endif
 
 builder.Services.AddControllers();
 
