@@ -101,14 +101,24 @@ public class Function {
         Process process = new() { 
             StartInfo = new ProcessStartInfo {
                 FileName = "/bin/bash",
-                Arguments = $"chmod +x {migrationEFBundle} && {migrationEFBundle} --connection \"{connectionString}\"",
+                Arguments = $"-c \"chmod +x {migrationEFBundle} && {migrationEFBundle} --connection '{connectionString}'\"",
                 RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                
             },
         };
+        process.ErrorDataReceived += (sender, e) => {
+            LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ejecución de migración en proceso - Error Data Received: {e.Data}");
+        };
+        process.OutputDataReceived += (sender, e) => {
+            LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ejecución de migración en proceso - Output Data Received: {e.Data}");
+        };
+        process.Exited += (sender, e) => {
+            LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ejecución de migración en proceso - Exited: {e}");
+        };
         process.Start();
-        while (!process.StandardOutput.EndOfStream) {
-            LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ejecución de migración en proceso: {process.StandardOutput.ReadLine()}");
-        }
 
         LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ha terminado el proceso de creacion inicial del schema y sus usuarios de aplicacion...");
 
