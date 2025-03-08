@@ -98,14 +98,17 @@ public class Function {
         }
 
         LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Se inicia con proceso de migracion EFCore del modelo de datos...");
-        ProcessStartInfo startInfo = new() { 
-            FileName = "/bin/bash",
-            Arguments = $"chmod +x {migrationEFBundle} && {migrationEFBundle} --connection \"{connectionString}\""
-        };
         Process process = new() { 
-            StartInfo = startInfo,
+            StartInfo = new ProcessStartInfo {
+                FileName = "/bin/bash",
+                Arguments = $"chmod +x {migrationEFBundle} && {migrationEFBundle} --connection \"{connectionString}\"",
+                RedirectStandardOutput = true,
+            },
         };
         process.Start();
+        while (!process.StandardOutput.EndOfStream) {
+            LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ejecución de migración en proceso: {process.StandardOutput.ReadLine()}");
+        }
 
         LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ha terminado el proceso de creacion inicial del schema y sus usuarios de aplicacion...");
 
