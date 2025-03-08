@@ -3,6 +3,7 @@ using MateoAPI.Helpers;
 using Newtonsoft.Json;
 using Npgsql;
 using System.Diagnostics;
+using System.Net.Http.Headers;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
@@ -95,31 +96,21 @@ public class Function {
                 LambdaLogger.Log(mensaje);
                 retorno.Add(mensaje);
             }
-        }
 
-        LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Se inicia con proceso de migracion EFCore del modelo de datos...");
-        Process process = new() { 
-            StartInfo = new ProcessStartInfo {
-                FileName = $"{migrationEFBundle}",
-                ArgumentList = { "--connection", $"\"{connectionString}\"" },
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            },
-            EnableRaisingEvents = true,
-        };
-        process.ErrorDataReceived += (sender, e) => {
-            LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ejecucion de migracion en proceso - Error Data Received: {e.Data}");
-        };
-        process.OutputDataReceived += (sender, e) => {
-            LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ejecucion de migracion en proceso - Output Data Received: {e.Data}");
-        };
-        process.Exited += (sender, e) => {
-            LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ejecucion de migracion en proceso - Exit Code: {process.ExitCode}");
-        };
-        process.Start();
-        process.WaitForExit(2 * 60 * 1000);
+            // Se aplica la migración de EFCore...
+            LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Se inicia migracion EFCore del modelo de datos...");
+            try {
+                string script = File.ReadAllText(migrationEFBundle);
+                using NpgsqlCommand cmd = new(script, conn);
+                cmd.ExecuteNonQuery();
+            } catch (Exception ex) {
+                string mensaje = $"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Error con la migracion EFCore del modelo de datos de la app: " + ex;
+                LambdaLogger.Log(mensaje);
+                retorno.Add(mensaje);
+            }
+
+            conn.Close();
+        }
 
         LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ha terminado el proceso de creacion inicial del schema y sus usuarios de aplicacion...");
 
