@@ -19,7 +19,7 @@ public class Function {
     /// <returns></returns>
     public string FunctionHandler(string input, ILambdaContext context) {
         Stopwatch sw = Stopwatch.StartNew();
-        LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Iniciando proceso de creacion inicial del schema y sus usuarios de aplicación...");
+        LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Iniciando proceso de creacion inicial del schema y sus usuarios de aplicacion...");
 
         string secretArnConnectionString = Environment.GetEnvironmentVariable("SECRET_ARN_CONNECTION_STRING") ?? throw new ArgumentNullException("SECRET_ARN_CONNECTION_STRING");
         string appName = Environment.GetEnvironmentVariable("APP_NAME") ?? throw new ArgumentNullException("APP_NAME");
@@ -94,7 +94,7 @@ public class Function {
             }
         }
 
-        LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ha terminado el proceso de creacion inicial del schema y sus usuarios de aplicación...");
+        LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ha terminado el proceso de creacion inicial del schema y sus usuarios de aplicacion...");
 
         return JsonConvert.SerializeObject(retorno);
     }
