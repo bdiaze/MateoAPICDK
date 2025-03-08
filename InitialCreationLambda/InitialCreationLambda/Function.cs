@@ -97,10 +97,10 @@ public class Function {
             }
         }
 
-        LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Se inicia con proceso de migración EFCore del modelo de datos...");
+        LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Se inicia con proceso de migracion EFCore del modelo de datos...");
         ProcessStartInfo startInfo = new() { 
             FileName = "/bin/bash",
-            Arguments = $"{migrationEFBundle} --connection \"{connectionString}\""
+            Arguments = $"chmod +x {migrationEFBundle} && {migrationEFBundle} --connection \"{connectionString}\""
         };
         Process process = new() { 
             StartInfo = startInfo,
