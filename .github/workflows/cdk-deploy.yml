@@ -32,6 +32,11 @@ jobs:
             PARAMETER_ARN_COGNITO_USER_POOL_ID: ${{ vars.PARAMETER_ARN_COGNITO_USER_POOL_ID }}
             PARAMETER_ARN_COGNITO_USER_POOL_CLIENT_ID: ${{ vars.PARAMETER_ARN_COGNITO_USER_POOL_CLIENT_ID }}
             PARAMETER_NAME_API_ALLOWED_DOMAINS: ${{ vars.PARAMETER_NAME_API_ALLOWED_DOMAINS }}
+            APP_SCHEMA_NAME: ${{ vars.APP_SCHEMA_NAME }}
+            PRIVATE_WITH_INTERNET_ID_1: ${{ vars.PRIVATE_WITH_INTERNET_ID_1 }}
+            PRIVATE_WITH_INTERNET_ID_2: ${{ vars.PRIVATE_WITH_INTERNET_ID_2 }}
+            INITIAL_CREATION_HANDLER: ${{ vars.INITIAL_CREATION_HANDLER }}
+            INITIAL_CREATION_PUBLISH_ZIP: ${{ vars.INITIAL_CREATION_PUBLISH_ZIP }}
             
         steps:
             - name: Checkout Repositorio
@@ -50,10 +55,18 @@ jobs:
             - name: Instalar AWS CDK
               run: npm install -g aws-cdk
               
-            - name: Publish .NET API
-              run: dotnet publish -o ./publish
+            - name: Publish .NET Initial Creation Lambda
+              working-directory: ${{ vars.INITIAL_CREATION_DIRECTORY }}
+              run: dotnet publish --property:PublishDir=../publish --runtime linux-arm64
               
-            - name: Compress Publish Directory
+            - name: Compress Publish Directory .NET Initial Creation Lambda
+              working-directory: ${{ vars.INITIAL_CREATION_DIRECTORY }}/publish
+              run: zip -r -q -T ./publish.zip ./*
+              
+            - name: Publish .NET API
+              run: dotnet publish --property:PublishDir=../publish --runtime linux-arm64
+              
+            - name: Compress Publish Directory .NET API
               working-directory: ./publish
               run: zip -r -q -T ./publish.zip ./*
       

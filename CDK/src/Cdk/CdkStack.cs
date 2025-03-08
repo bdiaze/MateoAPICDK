@@ -8,6 +8,7 @@ using Amazon.CDK.AWS.Lambda;
 using Amazon.CDK.AWS.Logs;
 using Amazon.CDK.AWS.SecretsManager;
 using Amazon.CDK.AWS.SSM;
+using Amazon.CDK.CustomResources;
 using Constructs;
 using System;
 using System.Collections.Generic;
@@ -37,6 +38,14 @@ namespace Cdk
             string parameterArnCognitoUserPoolId = System.Environment.GetEnvironmentVariable("PARAMETER_ARN_COGNITO_USER_POOL_ID")!;
             string parameterArnCognitoUserPoolClientId = System.Environment.GetEnvironmentVariable("PARAMETER_ARN_COGNITO_USER_POOL_CLIENT_ID")!;
             string parameterNameApiAllowedDomains = System.Environment.GetEnvironmentVariable("PARAMETER_NAME_API_ALLOWED_DOMAINS")!;
+
+            // Se obtienen variables de entorno para la creación de la lambda de ejecución inicial...
+            string appSchemaName = System.Environment.GetEnvironmentVariable("APP_SCHEMA_NAME")!;
+            string privateWithInternetId1 = System.Environment.GetEnvironmentVariable("PRIVATE_WITH_INTERNET_ID_1")!;
+            string privateWithInternetId2 = System.Environment.GetEnvironmentVariable("PRIVATE_WITH_INTERNET_ID_2")!;
+            string initialCreationHandler = System.Environment.GetEnvironmentVariable("INITIAL_CREATION_HANDLER")!;
+            string initialCreationPublishZip = System.Environment.GetEnvironmentVariable("INITIAL_CREATION_PUBLISH_ZIP")!;
+
 
             // Se obtiene la VPC y subnets...
             IVpc vpc = Vpc.FromLookup(this, $"{appName}Vpc", new VpcLookupOptions {
@@ -191,6 +200,100 @@ namespace Cdk
                 SourceArn = $"arn:aws:execute-api:{this.Region}:{this.Account}:{lambdaRestApi.RestApiId}/*/*/*",
             };
             function.AddPermission($"{appName}APIPermission", permission);
+
+            #region Initial Creation Lambda
+            // Se crea función lambda que ejecute scripts para la creación del esquema, usuario de aplicación y migración de EFCore...
+            // Primero creación de log group lambda de creación inicial...
+            LogGroup logGroupInitialLambda = new(this, $"{appName}APIInitialCreationLambdaLogGroup", new LogGroupProps {
+                LogGroupName = $"/aws/lambda/{appName}APIInitialCreationLambda/logs",
+                Retention = RetentionDays.ONE_MONTH,
+                RemovalPolicy = RemovalPolicy.DESTROY
+            });
+
+            // Luego la creación del rol para la función lambda...
+            IRole roleInitialLambda = new Role(this, $"{appName}APIInitialCreationLambdaRole", new RoleProps {
+                RoleName = $"{appName}APIInitialCreationLambdaRole",
+                Description = $"Role para Lambda de creacion inicial {appName}",
+                AssumedBy = new ServicePrincipal("lambda.amazonaws.com"),
+                ManagedPolicies = [
+                    ManagedPolicy.FromAwsManagedPolicyName("service-role/AWSLambdaVPCAccessExecutionRole"),
+                    ManagedPolicy.FromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"),
+                ],
+                InlinePolicies = new Dictionary<string, PolicyDocument> {
+                    {
+                        $"{appName}APIInitialCreationLambdaPolicy",
+                        new PolicyDocument(new PolicyDocumentProps {
+                            Statements = [
+                                new PolicyStatement(new PolicyStatementProps{
+                                    Sid = $"{appName}AccessToSecretManager",
+                                    Actions = [
+                                        "secretsmanager:GetSecretValue"
+                                    ],
+                                    Resources = [
+                                        secretArnConnectionString,
+                                    ],
+                                })
+                            ]
+                        })
+                    }
+                }
+            });
+
+            // Y el security group...
+            SecurityGroup securityGroupInitialLambda = new(this, $"{appName}APIInitialCreationLambdaSecurityGroup", new SecurityGroupProps {
+                Vpc = vpc,
+                SecurityGroupName = $"{appName}APIInitialCreationLambdaSecurityGroup",
+                Description = $"Security Group para Lambda de creacion inicial {appName}",
+                AllowAllOutbound = true
+            });
+            rdsSecurityGroup.AddIngressRule(Peer.SecurityGroupId(securityGroupInitialLambda.SecurityGroupId), Port.POSTGRES, $"Ingress para funcion lambda de creacion inicial {appName}");
+
+            // Creación de la función lambda
+            ISubnet privateWithInternet1 = Subnet.FromSubnetId(this, $"{appName}PrivateSubnetWithInternet1", privateWithInternetId1);
+            ISubnet privateWithInternet2 = Subnet.FromSubnetId(this, $"{appName}PrivateSubnetWithInternet2", privateWithInternetId2);
+            Function functionInitial = new(this, $"{appName}APIInitialCreationLambda", new FunctionProps {
+                Runtime = Runtime.DOTNET_8,
+                Handler = initialCreationHandler,
+                Code = Code.FromAsset(initialCreationPublishZip),
+                FunctionName = $"{appName}APIInitialCreationLambda",
+                Timeout = Duration.Seconds(2 * 60),
+                MemorySize = 256,
+                Architecture = Architecture.ARM_64,
+                LogGroup = logGroupInitialLambda,
+                Environment = new Dictionary<string, string> {
+                    { "SECRET_ARN_CONNECTION_STRING", secretArnConnectionString },
+                    { "APP_NAME", appName },
+                    { "APP_SCHEMA_NAME", appSchemaName },
+                },
+                Vpc = vpc,
+                VpcSubnets = new SubnetSelection {
+                    Subnets = [privateWithInternet1, privateWithInternet2]
+                },
+                SecurityGroups = [securityGroupInitialLambda],
+                Role = roleInitialLambda,
+            });
+
+            // Se gatilla la lambda...
+            _ = new AwsCustomResource(this, $"{appName}APIInitialCreationTrigger", new AwsCustomResourceProps {
+                Policy = AwsCustomResourcePolicy.FromStatements([
+                    new PolicyStatement(new PolicyStatementProps{
+                        Actions = [ "lambda:InvokeFunction" ],
+                        Resources = [functionInitial.FunctionArn ]
+                    })
+                ]),
+                Timeout = Duration.Seconds(2 * 60),
+                OnUpdate = new AwsSdkCall {
+                    Service = "Lambda",
+                    Action = "invoke",
+                    Parameters = new Dictionary<string, object> {
+                        { "FunctionName", functionInitial.FunctionName },
+                        { "InvocationType", "Event" },
+                        { "Payload", "\"\"" }
+                    },
+                    PhysicalResourceId = PhysicalResourceId.Of(DateTime.Now.ToString())
+                }
+            });
+            #endregion
         }
     }
 }

@@ -14,16 +14,14 @@ namespace Cdk
             string region = System.Environment.GetEnvironmentVariable("REGION_AWS")!;
 
             var app = new App();
-            new CdkStack(app, $"Cdk{appName}API", new StackProps
-            {
+            _ = new CdkStack(app, $"Cdk{appName}API", new StackProps {
                 // If you don't specify 'env', this stack will be environment-agnostic.
                 // Account/Region-dependent features and context lookups will not work,
                 // but a single synthesized template can be deployed anywhere.
 
                 // Uncomment the next block to specialize this stack for the AWS Account
                 // and Region that are implied by the current CLI configuration.
-                Env = new Amazon.CDK.Environment
-                {
+                Env = new Amazon.CDK.Environment {
                     Account = account,
                     Region = region,
                 }
