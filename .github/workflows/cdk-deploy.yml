@@ -64,9 +64,11 @@ jobs:
               run: dotnet publish --property:PublishDir=../publish --runtime linux-arm64
               
             - name: Creación de bundle EF Migrations
-              run: | 
-                dotnet ef migrations bundle -r linux-arm64 -o ${{ vars.INITIAL_CREATION_DIRECTORY }}/publish/Migrations --project ${{ vars.PROJECT_NAME }}
-                chmod +x ${{ vars.INITIAL_CREATION_DIRECTORY }}/publish/${{ vars.MIGRATION_EFBUNDLE }}
+              run: dotnet ef migrations bundle -r linux-arm64 -o ${{ vars.INITIAL_CREATION_DIRECTORY }}/publish/Migrations --project ${{ vars.PROJECT_NAME }}
+                
+            - name: Modificar bundle como ejecutable
+              working-directory: ${{ vars.INITIAL_CREATION_DIRECTORY }}/publish
+              run: chmod +x ${{ vars.MIGRATION_EFBUNDLE }}
               
             - name: Compress Publish Directory .NET Initial Creation Lambda
               working-directory: ${{ vars.INITIAL_CREATION_DIRECTORY }}/publish
