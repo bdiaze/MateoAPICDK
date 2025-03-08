@@ -101,7 +101,7 @@ public class Function {
         Process process = new() { 
             StartInfo = new ProcessStartInfo {
                 FileName = $"{migrationEFBundle}",
-                Arguments = $"--connection \"{connectionString}\"",
+                ArgumentList = { "--connection", $"\"{connectionString}\"" },
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -110,13 +110,13 @@ public class Function {
             EnableRaisingEvents = true,
         };
         process.ErrorDataReceived += (sender, e) => {
-            LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ejecución de migración en proceso - Error Data Received: {e.Data}");
+            LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ejecucion de migracion en proceso - Error Data Received: {e.Data}");
         };
         process.OutputDataReceived += (sender, e) => {
-            LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ejecución de migración en proceso - Output Data Received: {e.Data}");
+            LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ejecucion de migracion en proceso - Output Data Received: {e.Data}");
         };
         process.Exited += (sender, e) => {
-            LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ejecución de migración en proceso - Exited: {e}");
+            LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ejecucion de migracion en proceso - Exit Code: {process.ExitCode}");
         };
         process.Start();
         process.WaitForExit(2 * 60 * 1000);
