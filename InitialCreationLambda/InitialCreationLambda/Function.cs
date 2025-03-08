@@ -104,7 +104,7 @@ public class Function {
                 Arguments = $"--connection \"{connectionString}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                UseShellExecute = true,
+                UseShellExecute = false,
                 CreateNoWindow = true,
                 
             },
