@@ -37,7 +37,8 @@ jobs:
             PRIVATE_WITH_INTERNET_ID_2: ${{ vars.PRIVATE_WITH_INTERNET_ID_2 }}
             INITIAL_CREATION_HANDLER: ${{ vars.INITIAL_CREATION_HANDLER }}
             INITIAL_CREATION_PUBLISH_ZIP: ${{ vars.INITIAL_CREATION_PUBLISH_ZIP }}
-            
+            MIGRATION_EFBUNDLE: ${{ vars.MIGRATION_EFBUNDLE }}
+                        
         steps:
             - name: Checkout Repositorio
               uses: actions/checkout@v4

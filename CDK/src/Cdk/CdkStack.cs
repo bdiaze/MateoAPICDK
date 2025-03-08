@@ -45,6 +45,7 @@ namespace Cdk
             string privateWithInternetId2 = System.Environment.GetEnvironmentVariable("PRIVATE_WITH_INTERNET_ID_2")!;
             string initialCreationHandler = System.Environment.GetEnvironmentVariable("INITIAL_CREATION_HANDLER")!;
             string initialCreationPublishZip = System.Environment.GetEnvironmentVariable("INITIAL_CREATION_PUBLISH_ZIP")!;
+            string migrationEFBundle = System.Environment.GetEnvironmentVariable("MIGRATION_EFBUNDLE")!;
 
 
             // Se obtiene la VPC y subnets...
@@ -264,6 +265,7 @@ namespace Cdk
                     { "SECRET_ARN_CONNECTION_STRING", secretArnConnectionString },
                     { "APP_NAME", appName },
                     { "APP_SCHEMA_NAME", appSchemaName },
+                    { "MIGRATION_EFBUNDLE", migrationEFBundle }
                 },
                 Vpc = vpc,
                 VpcSubnets = new SubnetSelection {

@@ -24,22 +24,25 @@ public class Function {
         string secretArnConnectionString = Environment.GetEnvironmentVariable("SECRET_ARN_CONNECTION_STRING") ?? throw new ArgumentNullException("SECRET_ARN_CONNECTION_STRING");
         string appName = Environment.GetEnvironmentVariable("APP_NAME") ?? throw new ArgumentNullException("APP_NAME");
         string appSchemaName = Environment.GetEnvironmentVariable("APP_SCHEMA_NAME") ?? throw new ArgumentNullException("APP_SCHEMA_NAME");
+        string migrationEFBundle = Environment.GetEnvironmentVariable("MIGRATION_EFBUNDLE") ?? throw new ArgumentNullException("MIGRATION_EFBUNDLE");
+
         if (appSchemaName.Contains('"')) {
             throw new Exception($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Error con el nombre del schema para app \"{appName}\" - Caracteres invalidos...");
         }
 
         LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Obteniendo secreto de conexion a base de datos...");
 
-        Dictionary<string, string> connectionString = SecretManager.ObtenerSecreto(secretArnConnectionString).Result;
+        Dictionary<string, string> connectionStringSecrets = SecretManager.ObtenerSecreto(secretArnConnectionString).Result;
+        string connectionString = $"Server={connectionStringSecrets["Host"]};Port={connectionStringSecrets["Port"]};SslMode=prefer;" +
+            $"Database={connectionStringSecrets[$"{appName}Database"]};User Id={connectionStringSecrets[$"{appName}AdmUsername"]}; Password='{connectionStringSecrets[$"{appName}AdmPassword"]}';";
 
         List<string> retorno = [];
 
-        LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Conectandose a base de datos RDS PostgreSQL [{connectionString["Host"]}]...");
+        LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Conectandose a base de datos RDS PostgreSQL [{connectionStringSecrets["Host"]}]...");
 
-        using (NpgsqlConnection conn = new(
-            $"Server={connectionString["Host"]};Port={connectionString["Port"]};SslMode=prefer;" +
-            $"Database={connectionString[$"{appName}Database"]};User Id={connectionString[$"{appName}AdmUsername"]}; Password='{connectionString[$"{appName}AdmPassword"]}';")) {
 
+
+        using (NpgsqlConnection conn = new(connectionString)) {
             conn.Open();
 
             // Se crea schema...
@@ -54,11 +57,11 @@ public class Function {
             }
 
             // Se crea usuario de aplicación...
-            string appUsername = connectionString[$"{appName}AppUsername"];
+            string appUsername = connectionStringSecrets[$"{appName}AppUsername"];
             if (appUsername.Contains('"')) {
                 throw new Exception($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Error con el nombre de usuario de aplicacion para app \"{appName}\" - Caracteres invalidos...");
             }
-            string appPassword = connectionString[$"{appName}AppPassword"];
+            string appPassword = connectionStringSecrets[$"{appName}AppPassword"];
             if (appPassword.Contains('\'')) {
                 throw new Exception($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Error con la contraseña del usuario de aplicacion para app \"{appName}\" - Caracteres invalidos...");
             }
@@ -81,11 +84,11 @@ public class Function {
                 cmd.ExecuteNonQuery();
 
                 // Se definen los permisos por defecto para el usuario de aplicación, sobre las tablas creadas por el usuario administrador en el nuevo esquema...
-                using NpgsqlCommand cmd2 = new($"ALTER DEFAULT PRIVILEGES FOR USER \"{connectionString[$"{appName}AdmUsername"]}\" IN SCHEMA \"{appSchemaName}\" GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO \"{appUsername}\"", conn);
+                using NpgsqlCommand cmd2 = new($"ALTER DEFAULT PRIVILEGES FOR USER \"{connectionStringSecrets[$"{appName}AdmUsername"]}\" IN SCHEMA \"{appSchemaName}\" GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO \"{appUsername}\"", conn);
                 cmd2.ExecuteNonQuery();
 
                 // Se definen los permisos por defecto para el usuario de aplicación, sobre las secuencias creadas por el usuario administrador en el nuevo esquema..
-                using NpgsqlCommand cmd3 = new($"ALTER DEFAULT PRIVILEGES FOR USER \"{connectionString[$"{appName}AdmUsername"]}\" IN SCHEMA \"{appSchemaName}\" GRANT USAGE ON SEQUENCES TO \"{appUsername}\"", conn);
+                using NpgsqlCommand cmd3 = new($"ALTER DEFAULT PRIVILEGES FOR USER \"{connectionStringSecrets[$"{appName}AdmUsername"]}\" IN SCHEMA \"{appSchemaName}\" GRANT USAGE ON SEQUENCES TO \"{appUsername}\"", conn);
                 cmd3.ExecuteNonQuery();
             } catch (Exception ex) {
                 string mensaje = $"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Error al otorgar permisos para usuario de aplicacion de la app: " + ex;
@@ -93,6 +96,16 @@ public class Function {
                 retorno.Add(mensaje);
             }
         }
+
+        LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Se inicia con proceso de migración EFCore del modelo de datos...");
+        ProcessStartInfo startInfo = new() { 
+            FileName = "/bin/bash",
+            Arguments = $"{migrationEFBundle} --connection \"{connectionString}\""
+        };
+        Process process = new() { 
+            StartInfo = startInfo,
+        };
+        process.Start();
 
         LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Ha terminado el proceso de creacion inicial del schema y sus usuarios de aplicacion...");
 
