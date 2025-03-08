@@ -26,8 +26,8 @@ var builder = WebApplication.CreateBuilder(args);
         Host = "",
         Port = "",
         MateoDatabase = "",
-        MateoUsername = "",
-        MateoPassword = ""
+        MateoAppUsername = "",
+        MateoAppPassword = ""
     };
     string cognitoRegion = "";
     string cognitoUserPoolId = "";
@@ -41,7 +41,7 @@ builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi);
 
 builder.Services.AddDbContextPool<MateoDbContext>(options => options.UseNpgsql(
     $"Server={connectionString.Host};Port={connectionString.Port};SslMode=prefer;" +
-    $"Database={connectionString.MateoDatabase};User Id={connectionString.MateoUsername};Password='{connectionString.MateoPassword}';"
+    $"Database={connectionString.MateoDatabase};User Id={connectionString.MateoAppUsername};Password='{connectionString.MateoAppPassword}';"
 ));
 
 builder.Services.AddCors(item => {
