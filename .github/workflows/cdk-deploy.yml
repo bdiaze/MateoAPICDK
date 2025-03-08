@@ -72,7 +72,9 @@ jobs:
                 echo "ls ."
                 ls .
                 echo "ls ./Migrations"
-                ls ./Migrations
+                ls ./Migrations/
+                echo "ls ./Migrations/Migrations"
+                ls ./Migrations/Migrations
                 chmod +x ${{ vars.MIGRATION_EFBUNDLE }}
               
             - name: Compress Publish Directory .NET Initial Creation Lambda
