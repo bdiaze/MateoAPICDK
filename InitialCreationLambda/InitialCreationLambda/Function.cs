@@ -101,7 +101,7 @@ public class Function {
         Process process = new() { 
             StartInfo = new ProcessStartInfo {
                 FileName = "/bin/bash",
-                Arguments = $"-c \"chmod +x {migrationEFBundle} && {migrationEFBundle} --connection '{connectionString}'\"",
+                Arguments = $"-c \"{migrationEFBundle} --connection '{connectionString}'\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
