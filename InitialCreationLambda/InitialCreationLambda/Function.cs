@@ -100,11 +100,11 @@ public class Function {
         LambdaLogger.Log($"[Elapsed Time: {sw.ElapsedMilliseconds} ms] - Se inicia con proceso de migracion EFCore del modelo de datos...");
         Process process = new() { 
             StartInfo = new ProcessStartInfo {
-                FileName = "/bin/bash",
-                Arguments = $"-c \"{migrationEFBundle} --connection '{connectionString}'\"",
+                FileName = $"{migrationEFBundle}",
+                Arguments = $"--connection \"{connectionString}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                UseShellExecute = false,
+                UseShellExecute = true,
                 CreateNoWindow = true,
                 
             },

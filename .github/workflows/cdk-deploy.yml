@@ -68,7 +68,12 @@ jobs:
                 
             - name: Modificar bundle como ejecutable
               working-directory: ${{ vars.INITIAL_CREATION_DIRECTORY }}/publish
-              run: chmod +x ${{ vars.MIGRATION_EFBUNDLE }}
+              run: |
+                echo "ls ."
+                ls .
+                echo "ls ./Migrations"
+                ls ./Migrations
+                chmod +x ${{ vars.MIGRATION_EFBUNDLE }}
               
             - name: Compress Publish Directory .NET Initial Creation Lambda
               working-directory: ${{ vars.INITIAL_CREATION_DIRECTORY }}/publish
