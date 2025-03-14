@@ -61,7 +61,7 @@ jobs:
               
             - name: Publish .NET Initial Creation Lambda
               working-directory: ${{ vars.INITIAL_CREATION_DIRECTORY }}
-              run: dotnet publish --property:PublishDir=../publish --runtime linux-x64
+              run: dotnet publish --property:PublishDir=../publish --runtime linux-arm64
               
             - name: Creación de bundle EF Migrations
               run: dotnet ef migrations script --idempotent -o ${{ vars.INITIAL_CREATION_DIRECTORY }}/publish/${{ vars.MIGRATION_EFBUNDLE }} --project ${{ vars.PROJECT_NAME }}
@@ -71,7 +71,7 @@ jobs:
               run: zip -r -q -T ./publish.zip ./*
               
             - name: Publish .NET API
-              run: dotnet lambda package -pl MateoAPI --property:PublishDir=../publish --runtime linux-x64
+              run: dotnet publish --property:PublishDir=../publish --runtime linux-arm64
               
             - name: Compress Publish Directory .NET API
               working-directory: ./publish

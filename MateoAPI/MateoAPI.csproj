@@ -5,7 +5,6 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 	<AWSProjectType>Lambda</AWSProjectType>
-	<PublishAot>true</PublishAot>
   </PropertyGroup>
 
   <ItemGroup>

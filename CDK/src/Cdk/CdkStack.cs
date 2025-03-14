@@ -131,6 +131,7 @@ namespace Cdk
                 FunctionName = $"{appName}APILambdaFunction",
                 Timeout = Duration.Seconds(double.Parse(timeout)),
                 MemorySize = double.Parse(memorySize),
+                Architecture = Architecture.ARM_64,
                 LogGroup = logGroup,
                 Environment = new Dictionary<string, string> {
                     { "APP_NAME", appName },
@@ -258,6 +259,7 @@ namespace Cdk
                 FunctionName = $"{appName}APIInitialCreationLambda",
                 Timeout = Duration.Seconds(2 * 60),
                 MemorySize = 256,
+                Architecture = Architecture.ARM_64,
                 LogGroup = logGroupInitialLambda,
                 Environment = new Dictionary<string, string> {
                     { "SECRET_ARN_CONNECTION_STRING", secretArnConnectionString },
