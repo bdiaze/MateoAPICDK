@@ -71,7 +71,7 @@ jobs:
               run: zip -r -q -T ./publish.zip ./*
               
             - name: Publish .NET API
-              run: dotnet publish --property:PublishDir=../publish --runtime linux-x64
+              run: dotnet lambda package -pl MateoAPI --property:PublishDir=../publish --runtime linux-x64
               
             - name: Compress Publish Directory .NET API
               working-directory: ./publish
