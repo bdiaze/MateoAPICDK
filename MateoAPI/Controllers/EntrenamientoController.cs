@@ -22,6 +22,10 @@ namespace MateoAPI.Controllers {
             try {
                 int cantTotalElementos = _context.Entrenamientos.Where(e => e.IdUsuario == User.Identity!.Name && e.Inicio >= desde && e.Inicio <= hasta).Count();
                 int cantTotalPaginas = Convert.ToInt32(Math.Ceiling(Decimal.Divide(cantTotalElementos, cantElemPagina)));
+                
+                // Si la cantidad de páginas es 0, dado que no existen elementos, se le asigna el valor 1...
+                if (cantTotalPaginas == 0) cantTotalPaginas = 1;
+                
                 List<Entrenamiento> entrenamientos = await _context.Entrenamientos
                     .AsNoTracking()
                     .Where(e => e.IdUsuario == User.Identity!.Name && e.Inicio >= desde && e.Inicio <= hasta)
