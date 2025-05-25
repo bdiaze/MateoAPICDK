@@ -71,7 +71,7 @@ jobs:
               run: zip -r -q -T ./publish.zip ./*
               
             - name: Publish .NET API
-              run: dotnet publish --property:PublishDir=../publish --runtime linux-arm64
+              run: dotnet publish /p:PublishDir=../publish /p:PublishReadyToRun=true -r linux-arm64 --no-self-contained 
               
             - name: Compress Publish Directory .NET API
               working-directory: ./publish
